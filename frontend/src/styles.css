@@ -1,0 +1,217 @@
+:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, Arial, sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0f1115;
+  color: #f2f4f8;
+}
+
+.layout {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+
+.grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.panel {
+  background: #1a1f2a;
+  border: 1px solid #2a3444;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin: 12px 0;
+}
+
+input,
+select,
+button {
+  border-radius: 8px;
+  border: 1px solid #3b4559;
+  background: #111722;
+  color: #f2f4f8;
+  padding: 8px 10px;
+}
+
+button {
+  cursor: pointer;
+}
+
+.canvas-placeholder {
+  margin-top: 12px;
+  background: linear-gradient(135deg, #2a1f05, #6d4b00);
+  border-radius: 10px;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  color: #fff3ce;
+  font-weight: 600;
+}
+
+.error {
+  color: #ff8e8e;
+}
+
+.race-scene {
+  min-height: 360px;
+  border-radius: 12px;
+  border: 2px solid #2f7bbf;
+  overflow: hidden;
+  position: relative;
+  background: linear-gradient(#c8eef9 0 35%, #d8c099 35%);
+}
+
+.betting-board .banner {
+  background: #0c6ab3;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+  text-align: center;
+  padding: 16px;
+}
+
+.cards-grid {
+  padding: 10px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.horse-card {
+  background: #f6cf77;
+  border: 2px solid #a77000;
+  border-radius: 10px;
+  min-height: 64px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+}
+
+.horse-card .no {
+  color: #d41010;
+}
+
+.gate-scene {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  gap: 16px;
+}
+
+.countdown {
+  font-size: 96px;
+  font-weight: 900;
+  color: #ff3013;
+}
+
+.gate-row {
+  width: 96%;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: 4px;
+}
+
+.gate-slot {
+  background: #2f8c3a;
+  border: 1px solid #91cf97;
+  min-height: 60px;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
+
+.left-leaderboard {
+  position: absolute;
+  left: 8px;
+  top: 8px;
+  width: 210px;
+  display: grid;
+  gap: 4px;
+  z-index: 2;
+}
+
+.leader-item {
+  background: #f3f4f6;
+  color: #151515;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-weight: 700;
+  border-left: 4px solid #151515;
+}
+
+.leader-item.leader {
+  border-left-color: #0ee057;
+}
+
+.track {
+  position: absolute;
+  inset: 0;
+}
+
+.horse {
+  position: absolute;
+  width: 58px;
+  height: 26px;
+  border-radius: 20px;
+  background: #5b2d11;
+  border: 2px solid #231209;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.horse.winner {
+  background: #d1972e;
+  border-color: #fff56e;
+}
+
+.finish-line {
+  position: absolute;
+  right: 50px;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: repeating-linear-gradient(180deg, #fff 0 12px, #111 12px 24px);
+  color: #ff4f4f;
+  font-weight: 900;
+  writing-mode: vertical-rl;
+  text-orientation: mixed;
+  padding-top: 12px;
+}
+
+.zoom-box {
+  position: absolute;
+  right: 14px;
+  top: 20px;
+  width: 300px;
+  min-height: 130px;
+  border: 6px solid #1579bf;
+  background: rgba(0, 0, 0, 0.35);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-weight: 800;
+}
