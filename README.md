@@ -60,3 +60,23 @@ npm run dev
 ## Notes
 - Replace plain-text password storage with strong hashing (bcrypt/argon2) before production.
 - Wire Redis adapter for multi-instance Socket.IO fanout in clustered deployment.
+
+## Golang + Godot Track
+Yes — we can move this project to **Go + Godot** incrementally without blocking current work.
+
+- A starter Go service now lives under `go-backend/` with round-state endpoints.
+- A Godot client starter spec now lives under `godot-client/README.md`.
+- A staged migration plan is documented in `docs/golang-godot-migration.md`.
+
+### Run the Go starter
+```bash
+cd go-backend
+go run ./cmd/server
+```
+
+Quick checks:
+```bash
+curl http://localhost:8080/health
+curl http://localhost:8080/v1/round/state
+curl -X POST http://localhost:8080/v1/round/tick
+```
