@@ -14,3 +14,24 @@ export async function query(text, params = []) {
   const { rows } = await pool.query(text, params);
   return rows;
 }
+
+export async function inTransaction(fn) {
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+    const db = {
+      query: async (text, params = []) => {
+        const { rows } = await client.query(text, params);
+        return rows;
+      }
+    };
+    const result = await fn(db);
+    await client.query('COMMIT');
+    return result;
+  } catch (error) {
+    await client.query('ROLLBACK');
+    throw error;
+  } finally {
+    client.release();
+  }
+}
