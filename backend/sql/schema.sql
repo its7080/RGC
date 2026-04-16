@@ -36,7 +36,7 @@ CREATE TABLE IF NOT EXISTS system_config (
   id INTEGER PRIMARY KEY DEFAULT 1,
   maintenance_mode BOOLEAN NOT NULL DEFAULT FALSE,
   round_duration_seconds INTEGER NOT NULL DEFAULT 60,
-  game_availability JSONB NOT NULL DEFAULT '{"horseRace": true, "luckySpin": true, "cardGame": true, "numberDraw": true}'::jsonb
+  game_availability JSONB NOT NULL DEFAULT '{"horseRace": true, "andarBahar": true, "cards52": true, "cards24": true, "cards20": true, "tenKaDum": true, "luckySpin": true}'::jsonb
 );
 
 CREATE TABLE IF NOT EXISTS audit_logs (
