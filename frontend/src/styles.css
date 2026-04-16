@@ -73,6 +73,66 @@ button {
   color: #ff8e8e;
 }
 
+.success {
+  color: #81ffac;
+}
+
+.admin-metric-grid {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.metric-card {
+  background: #111722;
+  border: 1px solid #2f3d52;
+  border-radius: 10px;
+  padding: 12px;
+}
+
+.metric-card h4 {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #9ca7be;
+}
+
+.metric-card p {
+  margin: 8px 0 0;
+  font-size: 26px;
+  font-weight: 800;
+}
+
+.admin-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #2a3444;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+.admin-table th,
+.admin-table td {
+  border-bottom: 1px solid #2a3444;
+  text-align: left;
+  padding: 8px;
+}
+
+.admin-table th {
+  color: #9ca7be;
+}
+
 .race-scene {
   min-height: 360px;
   border-radius: 12px;
