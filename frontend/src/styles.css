@@ -94,7 +94,7 @@ button {
 .cards-grid {
   padding: 10px;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
   gap: 10px;
 }
 
@@ -110,6 +110,22 @@ button {
 
 .horse-card .no {
   color: #d41010;
+}
+
+.card-item {
+  background: #e7e9f4;
+  color: #1a1f2a;
+  border: 1px solid #6d7592;
+  border-radius: 8px;
+  min-height: 52px;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.card-item .no {
+  color: #c01b1b;
 }
 
 .gate-scene {

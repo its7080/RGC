@@ -26,8 +26,8 @@ This document explains the user-facing features currently available in the **ent
 - Update system configuration (maintenance mode, round duration, game availability).
 - Access audit logs.
 
-## Game Round Lifecycle (Horse Race)
-A round follows this timeline:
+## Game Round Lifecycle (All Enabled Games)
+Each enabled game (Lucky Horse Race, Andar Bahar, 52 Cards, 24 Cards, 20 Cards, 10 Ka Dum, Lucky Spin) follows this automatic timeline every **300 seconds (5 minutes)**:
 1. **round:start** → new round begins.
 2. **bet:open** → kiosks can place bets.
 3. **bet:close** → betting window closes.

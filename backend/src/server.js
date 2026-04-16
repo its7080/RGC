@@ -5,7 +5,7 @@ import { Server } from 'socket.io';
 import { config } from './config.js';
 import { authenticateCredentials, issueToken, requireAuth, requireRole } from './auth.js';
 import { signPayload, verifyPayload } from './qr.js';
-import { closeBetWindow, createRound, publishResult } from './gameEngine.js';
+import { closeBetWindow, createRound, ensureRound, publishResult, GAME_RULES } from './gameEngine.js';
 import {
   adjustKioskCoins,
   appendAudit,
@@ -21,6 +21,13 @@ import {
   updateSystemConfig
 } from './data/repository.js';
 import { initializePostgres } from './data/postgres.js';
+
+const AUTO_ROUND_INTERVAL_MS = 300_000;
+const ANIMATION_STEPS = {
+  startDelay: 1200,
+  finishDelay: 2600,
+  publishDelay: 4200
+};
 
 const app = express();
 app.use(cors({ origin: config.corsOrigin }));
@@ -135,37 +142,85 @@ app.get('/audit-logs', requireAuth, requireRole('super-admin'), async (_, res) =
 const httpServer = createServer(app);
 const io = new Server(httpServer, { cors: { origin: config.corsOrigin } });
 
+function generateLeaderboard(gameType) {
+  const total = GAME_RULES[gameType]?.optionCount || 12;
+  return Array.from({ length: total }, (_, i) => i + 1).sort(() => Math.random() - 0.5);
+}
+
+async function emitRoundOpen(gameType) {
+  const round = await createRound(gameType);
+  io.emit('round:start', { gameType, ...round });
+  io.emit('bet:open', { gameType, roundId: round.id, nextDrawInMs: AUTO_ROUND_INTERVAL_MS });
+  return round;
+}
+
+async function runRoundAnimation(gameType) {
+  const round = await closeBetWindow(gameType);
+  io.emit('bet:close', { gameType, roundId: round.id });
+  io.emit('game:animate', { gameType, roundId: round.id, phase: 'start_gate', countdown: 5 });
+
+  setTimeout(() => {
+    io.emit('game:animate', {
+      gameType,
+      roundId: round.id,
+      phase: 'race_pack',
+      leaderboard: generateLeaderboard(gameType)
+    });
+  }, ANIMATION_STEPS.startDelay);
+
+  setTimeout(() => {
+    io.emit('game:animate', {
+      gameType,
+      roundId: round.id,
+      phase: 'finish_zoom',
+      leaderboard: generateLeaderboard(gameType)
+    });
+  }, ANIMATION_STEPS.finishDelay);
+
+  setTimeout(async () => {
+    const published = await publishResult(gameType);
+    io.emit('result:publish', { gameType, roundId: round.id, result: published.result });
+  }, ANIMATION_STEPS.publishDelay);
+}
+
+async function getEnabledGames() {
+  const system = await getSystemConfig();
+  return Object.entries(system.gameAvailability)
+    .filter(([, enabled]) => enabled)
+    .map(([gameType]) => gameType);
+}
+
+async function ensureRoundsForEnabledGames() {
+  const games = await getEnabledGames();
+  await Promise.all(games.map((gameType) => ensureRound(gameType)));
+}
+
+async function runAutoCycle() {
+  const games = await getEnabledGames();
+  await Promise.all(games.map((gameType) => runRoundAnimation(gameType)));
+
+  setTimeout(async () => {
+    const nextGames = await getEnabledGames();
+    await Promise.all(nextGames.map((gameType) => emitRoundOpen(gameType)));
+  }, ANIMATION_STEPS.publishDelay + 500);
+}
+
+function startAutoRoundScheduler() {
+  runAutoCycle().catch((error) => console.error('Auto round cycle failed:', error));
+  setInterval(() => {
+    runAutoCycle().catch((error) => console.error('Auto round cycle failed:', error));
+  }, AUTO_ROUND_INTERVAL_MS);
+}
+
 io.on('connection', async (socket) => {
   socket.emit('round:state', await getRounds());
 
   socket.on('round:next', async ({ gameType = 'horseRace' } = {}) => {
-    const round = await createRound(gameType);
-    io.emit('round:start', round);
-    io.emit('bet:open', { gameType, roundId: round.id });
+    await emitRoundOpen(gameType);
   });
 
   socket.on('round:close', async ({ gameType = 'horseRace' } = {}) => {
-    const round = await closeBetWindow(gameType);
-    io.emit('bet:close', { gameType, roundId: round.id });
-    io.emit('game:animate', { gameType, roundId: round.id, phase: 'start_gate', countdown: 5 });
-
-    setTimeout(() => {
-      io.emit('game:animate', {
-        gameType,
-        roundId: round.id,
-        phase: 'race_pack',
-        leaderboard: Array.from({ length: 12 }, (_, i) => i + 1).sort(() => Math.random() - 0.5)
-      });
-    }, 1200);
-
-    setTimeout(() => {
-      io.emit('game:animate', {
-        gameType,
-        roundId: round.id,
-        phase: 'finish_zoom',
-        leaderboard: Array.from({ length: 12 }, (_, i) => i + 1).sort(() => Math.random() - 0.5)
-      });
-    }, 2600);
+    await runRoundAnimation(gameType);
   });
 
   socket.on('round:publish', async ({ gameType = 'horseRace' } = {}) => {
@@ -175,7 +230,10 @@ io.on('connection', async (socket) => {
 });
 
 initializePostgres()
-  .then(() => {
+  .then(async () => {
+    await ensureRoundsForEnabledGames();
+    await Promise.all((await getEnabledGames()).map((gameType) => emitRoundOpen(gameType)));
+    startAutoRoundScheduler();
     httpServer.listen(config.port, () => {
       console.log(`Royal Gold Casino API listening on :${config.port}`);
     });
