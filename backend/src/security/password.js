@@ -8,10 +8,6 @@ const SCRYPT_R = 8;
 const SCRYPT_P = 1;
 const HASH_PREFIX = 'scrypt';
 
-function isScryptHash(value) {
-  return typeof value === 'string' && value.startsWith(`${HASH_PREFIX}$`);
-}
-
 export async function hashPassword(plainTextPassword) {
   const salt = crypto.randomBytes(16).toString('hex');
   const derivedKey = await scrypt(plainTextPassword, salt, KEY_LENGTH, {
@@ -24,18 +20,16 @@ export async function hashPassword(plainTextPassword) {
 }
 
 export async function verifyPassword(plainTextPassword, storedPassword) {
-  if (isScryptHash(storedPassword)) {
-    const [, nText, rText, pText, salt, expectedHex] = storedPassword.split('$');
-    const derivedKey = await scrypt(plainTextPassword, salt, KEY_LENGTH, {
-      N: Number(nText),
-      r: Number(rText),
-      p: Number(pText)
-    });
-    const expected = Buffer.from(expectedHex, 'hex');
-    const actual = Buffer.from(derivedKey);
-    return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
-  }
+  if (typeof storedPassword !== 'string' || storedPassword.length === 0) return false;
+  if (!storedPassword.startsWith(`${HASH_PREFIX}$`)) return false;
 
-  // Backward compatibility for legacy seeded/demo users.
-  return plainTextPassword === storedPassword;
+  const [, nText, rText, pText, salt, expectedHex] = storedPassword.split('$');
+  const derivedKey = await scrypt(plainTextPassword, salt, KEY_LENGTH, {
+    N: Number(nText),
+    r: Number(rText),
+    p: Number(pText)
+  });
+  const expected = Buffer.from(expectedHex, 'hex');
+  const actual = Buffer.from(derivedKey);
+  return expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
 }

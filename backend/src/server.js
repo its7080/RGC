@@ -3,24 +3,42 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { config } from './config.js';
-import { authenticateCredentials, hashPassword, issueToken, requireAuth, requireRole } from './auth.js';
+import {
+  authenticateCredentials,
+  hashPassword,
+  issueAuthTokens,
+  requireAuth,
+  requireRole,
+  revokeSessionTokens,
+  rotateRefreshToken
+} from './auth.js';
 import { signPayload, verifyPayload } from './qr.js';
 import { closeBetWindow, createRound, ensureRound, publishResult, GAME_RULES } from './gameEngine.js';
 import {
-  adjustKioskCoins,
   appendAudit,
   createAdmin,
-  createBet,
+  createBetAndAdjustKioskCoins,
   getBet,
   getKiosk,
   getRound,
   getRounds,
   getSystemConfig,
+  listKiosks,
   listAuditLogs,
   listRecentBets,
+  migrateLegacyPasswords,
   updateSystemConfig
 } from './data/repository.js';
-import { initializePostgres } from './data/postgres.js';
+import { inTransaction, initializePostgres } from './data/postgres.js';
+import {
+  validateAdjustCoinsBody,
+  validateBetBody,
+  validateCreateAdminBody,
+  validateLoginBody,
+  validateQrBody,
+  validateRefreshBody,
+  validateSuperConfigBody
+} from './validation.js';
 
 const AUTO_ROUND_INTERVAL_MS = 300_000;
 const ANIMATION_STEPS = {
@@ -33,20 +51,57 @@ const app = express();
 app.use(cors({ origin: config.corsOrigin }));
 app.use(express.json());
 
+function buildRateLimiter({ windowMs, max }) {
+  const buckets = new Map();
+  return (req, res, next) => {
+    const key = req.ip || req.headers['x-forwarded-for'] || 'global';
+    const now = Date.now();
+    const item = buckets.get(key) || { count: 0, start: now };
+    if (now - item.start >= windowMs) {
+      item.count = 0;
+      item.start = now;
+    }
+    item.count += 1;
+    buckets.set(key, item);
+
+    if (item.count > max) {
+      return res.status(429).json({ error: 'Too many requests' });
+    }
+    next();
+  };
+}
+
+const authLimiter = buildRateLimiter({ windowMs: 60_000, max: 15 });
+const betsLimiter = buildRateLimiter({ windowMs: 30_000, max: 40 });
+
 app.get('/health', async (_, res) => {
   res.json({ ok: true, ts: Date.now() });
 });
 
-app.post('/auth/login', async (req, res) => {
+app.post('/auth/login', authLimiter, validateLoginBody, async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
-
   const user = await authenticateCredentials(username, password);
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
-  const token = issueToken(user);
+  const { accessToken, refreshToken } = await issueAuthTokens(user);
   await appendAudit(user.username, 'auth.login');
-  res.json({ token, role: user.role, kioskId: user.kioskId || null });
+  res.json({ token: accessToken, refreshToken, role: user.role, kioskId: user.kioskId || null });
+});
+
+app.post('/auth/refresh', authLimiter, validateRefreshBody, async (req, res) => {
+  const rotated = await rotateRefreshToken(req.body.refreshToken);
+  if (!rotated) return res.status(401).json({ error: 'Invalid refresh token' });
+
+  await appendAudit(rotated.user.username, 'auth.refresh');
+  res.json({ token: rotated.accessToken, refreshToken: rotated.refreshToken, role: rotated.user.role, kioskId: rotated.user.kioskId || null });
+});
+
+app.post('/auth/logout', requireAuth, async (req, res) => {
+  const raw = req.headers.authorization || '';
+  const accessToken = raw.startsWith('Bearer ') ? raw.slice(7) : null;
+  await revokeSessionTokens({ refreshToken: req.body?.refreshToken, accessToken });
+  await appendAudit(req.user.username, 'auth.logout');
+  res.status(204).send();
 });
 
 app.get('/games/active', requireAuth, async (_, res) => {
@@ -59,7 +114,7 @@ app.get('/games/active', requireAuth, async (_, res) => {
   res.json({ activeGames, rounds });
 });
 
-app.post('/bets', requireAuth, requireRole('kiosk'), async (req, res) => {
+app.post('/bets', betsLimiter, requireAuth, requireRole('kiosk'), validateBetBody, async (req, res) => {
   const { gameType, option, wager } = req.body;
   const round = await getRound(gameType);
   if (!round || round.stage !== 'bet:open') return res.status(400).json({ error: 'Bet window closed' });
@@ -69,16 +124,29 @@ app.post('/bets', requireAuth, requireRole('kiosk'), async (req, res) => {
   if (wager < kiosk.minBet || wager > kiosk.maxBet) return res.status(400).json({ error: 'Bet outside limits' });
   if (kiosk.coinBalance < wager) return res.status(400).json({ error: 'Insufficient balance' });
 
-  const bet = await createBet({
-    kioskId: req.user.kioskId,
-    gameType,
-    roundId: round.id,
-    option,
-    wager
-  });
+  const result = await inTransaction((db) =>
+    createBetAndAdjustKioskCoins(
+      {
+        kioskId: req.user.kioskId,
+        gameType,
+        roundId: round.id,
+        option,
+        wager
+      },
+      db
+    )
+  );
+  if (!result.kiosk) {
+    return res.status(404).json({ error: 'Kiosk not found' });
+  }
+  const bet = result.bet;
 
-  await adjustKioskCoins(req.user.kioskId, -Number(wager));
-  await appendAudit(req.user.username, 'bet.placed', bet);
+  await appendAudit(req.user.username, 'bet.placed', {
+    betId: bet.betId,
+    kioskId: bet.kioskId,
+    gameType: bet.gameType,
+    roundId: bet.roundId
+  });
 
   const qrToken = signPayload({ betId: bet.betId, kioskId: bet.kioskId, roundId: bet.roundId, gameType });
   io.emit('bet:placed', { betId: bet.betId, kioskId: bet.kioskId, gameType, roundId: bet.roundId });
@@ -86,7 +154,7 @@ app.post('/bets', requireAuth, requireRole('kiosk'), async (req, res) => {
   res.status(201).json({ bet, qrToken });
 });
 
-app.post('/qr/verify', requireAuth, async (req, res) => {
+app.post('/qr/verify', requireAuth, validateQrBody, async (req, res) => {
   const { qrToken } = req.body;
   const verify = verifyPayload(qrToken);
   if (!verify.ok) return res.status(400).json({ error: verify.reason });
@@ -102,38 +170,41 @@ app.post('/qr/verify', requireAuth, async (req, res) => {
 app.get('/admin/dashboard', requireAuth, requireRole('admin', 'super-admin'), async (_, res) => {
   const bets = await listRecentBets();
   const totalCoinsInPlay = bets.reduce((sum, b) => sum + Number(b.wager), 0);
-  const kiosk = await getKiosk('K-001');
+  const kiosks = await listKiosks();
   const rounds = await getRounds();
 
   res.json({
     activeBets: bets.length,
     totalCoinsInPlay,
-    kioskStatus: kiosk ? { [kiosk.kioskId]: kiosk } : {},
+    kioskStatus: kiosks.reduce((acc, kiosk) => ({ ...acc, [kiosk.kioskId]: kiosk }), {}),
     rounds
   });
 });
 
-app.post('/admin/kiosks/:kioskId/coins', requireAuth, requireRole('admin', 'super-admin'), async (req, res) => {
+app.post('/admin/kiosks/:kioskId/coins', requireAuth, requireRole('admin', 'super-admin'), validateAdjustCoinsBody, async (req, res) => {
   const { kioskId } = req.params;
   const { delta } = req.body;
-  const updated = await adjustKioskCoins(kioskId, Number(delta || 0));
+  const updated = await inTransaction((db) =>
+    db.query(
+      'UPDATE kiosks SET coin_balance = coin_balance + $2 WHERE kiosk_id = $1 RETURNING kiosk_id AS "kioskId", coin_balance AS "coinBalance"',
+      [kioskId, delta]
+    ).then((rows) => rows[0] || null)
+  );
   if (!updated) return res.status(404).json({ error: 'Kiosk not found' });
 
   await appendAudit(req.user.username, 'kiosk.coin.adjust', { kioskId, delta });
   res.json(updated);
 });
 
-app.post('/super/admins', requireAuth, requireRole('super-admin'), async (req, res) => {
+app.post('/super/admins', requireAuth, requireRole('super-admin'), validateCreateAdminBody, async (req, res) => {
   const { username, password } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
-
   const passwordHash = await hashPassword(password);
   const admin = await createAdmin(username, passwordHash);
   await appendAudit(req.user.username, 'admin.created', { username });
   res.status(201).json(admin);
 });
 
-app.post('/super/config', requireAuth, requireRole('super-admin'), async (req, res) => {
+app.post('/super/config', requireAuth, requireRole('super-admin'), validateSuperConfigBody, async (req, res) => {
   const next = await updateSystemConfig(req.body);
   await appendAudit(req.user.username, 'system.config.updated', req.body);
   res.json({ config: next });
@@ -236,6 +307,7 @@ io.on('connection', async (socket) => {
 
 initializePostgres()
   .then(async () => {
+    await migrateLegacyPasswords();
     await ensureRoundsForEnabledGames();
     await Promise.all((await getEnabledGames()).map((gameType) => emitRoundOpen(gameType)));
     startAutoRoundScheduler();

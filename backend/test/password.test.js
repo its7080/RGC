@@ -17,10 +17,10 @@ test('verifyPassword matches scrypt hashes', async () => {
   assert.equal(bad, false);
 });
 
-test('verifyPassword supports legacy plain-text values', async () => {
+test('verifyPassword rejects legacy plain-text values', async () => {
   const ok = await verifyPassword('legacy-pass', 'legacy-pass');
   const bad = await verifyPassword('different', 'legacy-pass');
 
-  assert.equal(ok, true);
+  assert.equal(ok, false);
   assert.equal(bad, false);
 });
