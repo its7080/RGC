@@ -64,5 +64,5 @@ npm run dev
   - finish-line zoom frame
 
 ## Notes
-- Replace plain-text password storage with strong hashing (bcrypt/argon2) before production.
+- Password hashing is implemented for new/admin-created credentials (scrypt); legacy seed users remain backward-compatible for demo environments.
 - Wire Redis adapter for multi-instance Socket.IO fanout in clustered deployment.

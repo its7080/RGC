@@ -1,10 +1,10 @@
 import crypto from 'crypto';
 import { query } from './postgres.js';
 
-export async function findUserByCredentials(username, password) {
+export async function findUserByUsername(username) {
   const rows = await query(
-    'SELECT id, username, password, role, kiosk_id AS "kioskId" FROM users WHERE username = $1 AND password = $2 LIMIT 1',
-    [username, password]
+    'SELECT id, username, password, role, kiosk_id AS "kioskId" FROM users WHERE username = $1 LIMIT 1',
+    [username]
   );
   return rows[0] || null;
 }
@@ -104,11 +104,11 @@ export async function listRecentBets() {
   );
 }
 
-export async function createAdmin(username, password) {
+export async function createAdmin(username, passwordHash) {
   const id = `admin-${Date.now()}`;
   const rows = await query(
     'INSERT INTO users (id, username, password, role, kiosk_id) VALUES ($1, $2, $3, $4, NULL) RETURNING id, username, role',
-    [id, username, password, 'admin']
+    [id, username, passwordHash, 'admin']
   );
   return rows[0];
 }

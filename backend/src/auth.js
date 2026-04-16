@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { config } from './config.js';
-import { findUserByCredentials } from './data/repository.js';
+import { findUserByUsername } from './data/repository.js';
+import { hashPassword, verifyPassword } from './security/password.js';
 
 export function issueToken(user) {
   return jwt.sign(
@@ -34,5 +35,13 @@ export function requireRole(...allowed) {
 }
 
 export async function authenticateCredentials(username, password) {
-  return findUserByCredentials(username, password);
+  const user = await findUserByUsername(username);
+  if (!user) return null;
+
+  const ok = await verifyPassword(password, user.password);
+  if (!ok) return null;
+
+  return user;
 }
+
+export { hashPassword };

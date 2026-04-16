@@ -3,7 +3,7 @@ import cors from 'cors';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { config } from './config.js';
-import { authenticateCredentials, issueToken, requireAuth, requireRole } from './auth.js';
+import { authenticateCredentials, hashPassword, issueToken, requireAuth, requireRole } from './auth.js';
 import { signPayload, verifyPayload } from './qr.js';
 import { closeBetWindow, createRound, ensureRound, publishResult, GAME_RULES } from './gameEngine.js';
 import {
@@ -39,6 +39,8 @@ app.get('/health', async (_, res) => {
 
 app.post('/auth/login', async (req, res) => {
   const { username, password } = req.body;
+  if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
+
   const user = await authenticateCredentials(username, password);
   if (!user) return res.status(401).json({ error: 'Invalid credentials' });
 
@@ -123,7 +125,10 @@ app.post('/admin/kiosks/:kioskId/coins', requireAuth, requireRole('admin', 'supe
 
 app.post('/super/admins', requireAuth, requireRole('super-admin'), async (req, res) => {
   const { username, password } = req.body;
-  const admin = await createAdmin(username, password);
+  if (!username || !password) return res.status(400).json({ error: 'Username and password are required' });
+
+  const passwordHash = await hashPassword(password);
+  const admin = await createAdmin(username, passwordHash);
   await appendAudit(req.user.username, 'admin.created', { username });
   res.status(201).json(admin);
 });
