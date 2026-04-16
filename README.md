@@ -31,6 +31,12 @@ npm install
 npm run dev
 ```
 
+
+## User Documentation
+- Feature overview: `docs/FEATURES.md`
+- Usability guide: `docs/USABILITY.md`
+- SRS document: `docs/SRS.md`
+
 ## Data Layer
 - SQL schema + seed data is versioned at `backend/sql/schema.sql`.
 - Backend boots only after applying schema in `initializePostgres()`.
