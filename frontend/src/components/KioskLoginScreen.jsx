@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-export function KioskLoginScreen({ onLogin, error = '', isSubmitting = false }) {
+export function KioskLoginScreen({ onLogin, error = '', isSubmitting = false, onBack }) {
   const [username, setUsername] = useState('kiosk');
   const [password, setPassword] = useState('kiosk123');
   const [rememberMe, setRememberMe] = useState(true);
@@ -68,6 +68,11 @@ export function KioskLoginScreen({ onLogin, error = '', isSubmitting = false }) 
           <button type="submit" className="kiosk-login-btn" disabled={isSubmitting}>
             {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
+          {onBack && (
+            <button type="button" className="kiosk-login-btn" onClick={onBack}>
+              Back
+            </button>
+          )}
           {error && <p className="kiosk-login-error">{error}</p>}
           <div className="signup-text">NEW USER? SIGN UP HERE</div>
         </form>

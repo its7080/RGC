@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { login } from './api';
 import { socket } from './socket';
 import { GameCanvas } from './components/GameCanvas';
-import { KioskPanel } from './components/KioskPanel';
 import { KioskLandingScreen } from './components/KioskLandingScreen';
 import { KioskTermsScreen } from './components/KioskTermsScreen';
 import { KioskLoginScreen } from './components/KioskLoginScreen';
@@ -119,7 +118,12 @@ export function App() {
         return <KioskLandingScreen onPlayNow={() => setKioskStep('terms')} />;
       }
       if (kioskStep === 'terms') {
-        return <KioskTermsScreen onAgree={() => setKioskStep('login')} />;
+        return (
+          <KioskTermsScreen
+            onAgree={() => setKioskStep('login')}
+            onBack={() => setKioskStep('intro')}
+          />
+        );
       }
       if (kioskStep === 'login') {
         return (
@@ -127,6 +131,7 @@ export function App() {
             onLogin={handleKioskLogin}
             error={kioskLoginError}
             isSubmitting={kioskLoginPending}
+            onBack={() => setKioskStep('terms')}
           />
         );
       }
@@ -137,10 +142,11 @@ export function App() {
             selectedGame={activeGame}
             onSelectGame={setActiveGame}
             onContinue={() => setKioskStep('betting')}
+            onBack={() => setKioskStep('login')}
           />
         );
       }
-      return <KioskPanel gameLabels={gameLabels} initialGameType={activeGame} />;
+      return null;
     }
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;

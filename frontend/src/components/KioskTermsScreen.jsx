@@ -8,7 +8,7 @@ const terms = [
   'The platform is not responsible for legal complexities created by Government administration.'
 ];
 
-export function KioskTermsScreen({ onAgree }) {
+export function KioskTermsScreen({ onAgree, onBack }) {
   return (
     <section className="kiosk-terms-screen" aria-label="Terms and condition screen">
       <div className="kiosk-bg-pattern" />
@@ -44,7 +44,14 @@ export function KioskTermsScreen({ onAgree }) {
         </div>
       </article>
 
-      <button className="agree-btn-kiosk" onClick={onAgree}>I AGREE</button>
+      <div className="row" style={{ justifyContent: 'center', gap: 12 }}>
+        {onBack && (
+          <button className="agree-btn-kiosk" onClick={onBack} type="button">
+            BACK
+          </button>
+        )}
+        <button className="agree-btn-kiosk" onClick={onAgree} type="button">I AGREE</button>
+      </div>
     </section>
   );
 }
