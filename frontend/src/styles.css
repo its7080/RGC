@@ -1648,6 +1648,27 @@ button {
   inset: 0 0 0 270px;
 }
 
+.horse-three-scene {
+  position: absolute;
+  inset: 0;
+  border: 0;
+}
+
+.horse-three-scene canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+.three-fallback {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  font-size: 20px;
+  font-weight: 800;
+  color: #163b47;
+}
+
 .horse-runner {
   position: absolute;
   left: 80%;
@@ -1656,6 +1677,7 @@ button {
   align-items: center;
   gap: 6px;
   font-size: 32px;
+  z-index: 3;
 }
 
 .horse-runner.live {
@@ -1715,6 +1737,7 @@ button {
   bottom: 8%;
   width: 10px;
   background: repeating-linear-gradient(180deg, #fff 0 18px, #222 18px 36px);
+  z-index: 2;
 }
 
 .zoom-title {

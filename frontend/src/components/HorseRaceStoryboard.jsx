@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { HorseRaceThreeScene } from './HorseRaceThreeScene';
 
 const gameMeta = {
   horseRace: { title: 'LUCKY HORSE RACE', count: 12, prefix: 'Horse', boardClass: 'horse-card' },
@@ -183,6 +184,7 @@ export function HorseRaceStoryboard({ gameType = 'horseRace', phase, countdown =
         </aside>
 
         <div className="run-track">
+          <HorseRaceThreeScene ranking={ranking} phase={phase} />
           <div className="finish-line-v2" />
           {ranking.map((horseNo, idx) => {
             const rankPosition = ranking.indexOf(horseNo);
