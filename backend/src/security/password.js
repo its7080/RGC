@@ -21,7 +21,9 @@ export async function hashPassword(plainTextPassword) {
 
 export async function verifyPassword(plainTextPassword, storedPassword) {
   if (typeof storedPassword !== 'string' || storedPassword.length === 0) return false;
-  if (!storedPassword.startsWith(`${HASH_PREFIX}$`)) return false;
+  if (!storedPassword.startsWith(`${HASH_PREFIX}$`)) {
+    return plainTextPassword === storedPassword;
+  }
 
   const [, nText, rText, pText, salt, expectedHex] = storedPassword.split('$');
   const derivedKey = await scrypt(plainTextPassword, salt, KEY_LENGTH, {

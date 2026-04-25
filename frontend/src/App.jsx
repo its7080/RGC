@@ -96,6 +96,23 @@ export function App() {
       setKioskLoginPending(false);
     }
   }, [role]);
+
+  const handleKioskLogin = async ({ username, password }) => {
+    try {
+      setKioskLoginPending(true);
+      setKioskLoginError('');
+      const data = await login(username, password);
+      localStorage.setItem('rgc_token', data.token);
+      if (data.refreshToken) localStorage.setItem('rgc_refresh_token', data.refreshToken);
+      setAuthMsg(`Logged in as ${data.role || 'kiosk'}`);
+      setKioskStep('dashboard');
+    } catch (e) {
+      setKioskLoginError(e.message || 'Login failed');
+    } finally {
+      setKioskLoginPending(false);
+    }
+  };
+
   const activePanel = useMemo(() => {
     if (role === 'kiosk') {
       if (kioskStep === 'intro') {
@@ -128,22 +145,6 @@ export function App() {
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;
   }, [role, kioskStep, activeGame, kioskLoginError, kioskLoginPending]);
-
-  const handleKioskLogin = async ({ username, password }) => {
-    try {
-      setKioskLoginPending(true);
-      setKioskLoginError('');
-      const data = await login(username, password);
-      localStorage.setItem('rgc_token', data.token);
-      if (data.refreshToken) localStorage.setItem('rgc_refresh_token', data.refreshToken);
-      setAuthMsg(`Logged in as ${data.role || 'kiosk'}`);
-      setKioskStep('dashboard');
-    } catch (e) {
-      setKioskLoginError(e.message || 'Login failed');
-    } finally {
-      setKioskLoginPending(false);
-    }
-  };
 
   const quickLogin = async () => {
     const creds = credentialsByRole[role];
