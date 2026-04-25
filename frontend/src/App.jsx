@@ -40,6 +40,8 @@ export function App() {
   const [events, setEvents] = useState([]);
   const [authMsg, setAuthMsg] = useState('Not authenticated');
   const [kioskStep, setKioskStep] = useState('intro');
+  const [kioskLoginError, setKioskLoginError] = useState('');
+  const [kioskLoginPending, setKioskLoginPending] = useState(false);
 
   useEffect(() => {
     const patchState = (gameType, patch) => {
@@ -88,7 +90,11 @@ export function App() {
 
 
   useEffect(() => {
-    if (role === 'kiosk') setKioskStep('intro');
+    if (role === 'kiosk') {
+      setKioskStep('intro');
+      setKioskLoginError('');
+      setKioskLoginPending(false);
+    }
   }, [role]);
   const activePanel = useMemo(() => {
     if (role === 'kiosk') {
@@ -99,7 +105,13 @@ export function App() {
         return <KioskTermsScreen onAgree={() => setKioskStep('login')} />;
       }
       if (kioskStep === 'login') {
-        return <KioskLoginScreen onLogin={() => setKioskStep('dashboard')} />;
+        return (
+          <KioskLoginScreen
+            onLogin={handleKioskLogin}
+            error={kioskLoginError}
+            isSubmitting={kioskLoginPending}
+          />
+        );
       }
       if (kioskStep === 'dashboard') {
         return (
@@ -115,7 +127,23 @@ export function App() {
     }
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;
-  }, [role, kioskStep, activeGame]);
+  }, [role, kioskStep, activeGame, kioskLoginError, kioskLoginPending]);
+
+  const handleKioskLogin = async ({ username, password }) => {
+    try {
+      setKioskLoginPending(true);
+      setKioskLoginError('');
+      const data = await login(username, password);
+      localStorage.setItem('rgc_token', data.token);
+      if (data.refreshToken) localStorage.setItem('rgc_refresh_token', data.refreshToken);
+      setAuthMsg(`Logged in as ${data.role || 'kiosk'}`);
+      setKioskStep('dashboard');
+    } catch (e) {
+      setKioskLoginError(e.message || 'Login failed');
+    } finally {
+      setKioskLoginPending(false);
+    }
+  };
 
   const quickLogin = async () => {
     const creds = credentialsByRole[role];

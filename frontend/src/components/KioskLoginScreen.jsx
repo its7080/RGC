@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 
-export function KioskLoginScreen({ onLogin }) {
-  const [username, setUsername] = useState('7701015');
-  const [password, setPassword] = useState('******');
+export function KioskLoginScreen({ onLogin, error = '', isSubmitting = false }) {
+  const [username, setUsername] = useState('kiosk');
+  const [password, setPassword] = useState('kiosk123');
   const [rememberMe, setRememberMe] = useState(true);
 
   const submitLogin = (event) => {
@@ -65,7 +65,10 @@ export function KioskLoginScreen({ onLogin }) {
             <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
           </label>
 
-          <button type="submit" className="kiosk-login-btn">Login</button>
+          <button type="submit" className="kiosk-login-btn" disabled={isSubmitting}>
+            {isSubmitting ? 'Logging in...' : 'Login'}
+          </button>
+          {error && <p className="kiosk-login-error">{error}</p>}
           <div className="signup-text">NEW USER? SIGN UP HERE</div>
         </form>
       </section>

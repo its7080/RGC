@@ -766,6 +766,20 @@ button {
   font-weight: 900;
 }
 
+.kiosk-login-btn:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.kiosk-login-error {
+  margin: 2px auto 0;
+  max-width: min(88%, 480px);
+  text-align: center;
+  font-size: clamp(14px, 1vw, 18px);
+  color: #8b0000;
+  font-weight: 800;
+}
+
 .signup-text {
   text-align: center;
   font-size: clamp(15px, 1.1vw, 20px);
