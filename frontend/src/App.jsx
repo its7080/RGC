@@ -5,6 +5,7 @@ import { GameCanvas } from './components/GameCanvas';
 import { KioskPanel } from './components/KioskPanel';
 import { KioskLandingScreen } from './components/KioskLandingScreen';
 import { KioskTermsScreen } from './components/KioskTermsScreen';
+import { KioskLoginScreen } from './components/KioskLoginScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
 
@@ -94,7 +95,10 @@ export function App() {
         return <KioskLandingScreen onPlayNow={() => setKioskStep('terms')} />;
       }
       if (kioskStep === 'terms') {
-        return <KioskTermsScreen onAgree={() => setKioskStep('betting')} />;
+        return <KioskTermsScreen onAgree={() => setKioskStep('login')} />;
+      }
+      if (kioskStep === 'login') {
+        return <KioskLoginScreen onLogin={() => setKioskStep('betting')} />;
       }
       return <KioskPanel gameLabels={gameLabels} />;
     }
