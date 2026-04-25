@@ -2,7 +2,6 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { login } from './api';
 import { socket } from './socket';
 import { GameCanvas } from './components/GameCanvas';
-import { KioskPanel } from './components/KioskPanel';
 import { KioskLandingScreen } from './components/KioskLandingScreen';
 import { KioskTermsScreen } from './components/KioskTermsScreen';
 import { KioskLoginScreen } from './components/KioskLoginScreen';
@@ -147,14 +146,7 @@ export function App() {
           />
         );
       }
-      return (
-        <KioskPanel
-          gameLabels={gameLabels}
-          initialGameType={activeGame}
-          onChangeGame={setActiveGame}
-          onBackToGames={() => setKioskStep('dashboard')}
-        />
-      );
+      return null;
     }
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;
