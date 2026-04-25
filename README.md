@@ -16,7 +16,20 @@ Production-oriented implementation for the **Royal Gold Casino** web-based 3D en
 docker compose up -d postgres redis
 ```
 
-### 2) Backend
+### 2) Database setup (`backend/sql/schema.sql`)
+Apply the SQL schema and seed data from `backend/sql/schema.sql` to your PostgreSQL database.
+
+**Option A: using Docker (recommended for this repo)**
+```bash
+docker compose exec -T postgres psql -U rgc -d rgc < backend/sql/schema.sql
+```
+
+**Option B: using local `psql`**
+```bash
+psql "postgres://rgc:rgc@localhost:5432/rgc" -f backend/sql/schema.sql
+```
+
+### 3) Backend
 ```bash
 cd backend
 npm install
@@ -24,7 +37,7 @@ cp .env.example .env
 npm run dev
 ```
 
-### 3) Frontend
+### 4) Frontend
 ```bash
 cd frontend
 npm install
