@@ -6,6 +6,7 @@ import { KioskPanel } from './components/KioskPanel';
 import { KioskLandingScreen } from './components/KioskLandingScreen';
 import { KioskTermsScreen } from './components/KioskTermsScreen';
 import { KioskLoginScreen } from './components/KioskLoginScreen';
+import { KioskGameSelectScreen } from './components/KioskGameSelectScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
 
@@ -98,13 +99,23 @@ export function App() {
         return <KioskTermsScreen onAgree={() => setKioskStep('login')} />;
       }
       if (kioskStep === 'login') {
-        return <KioskLoginScreen onLogin={() => setKioskStep('betting')} />;
+        return <KioskLoginScreen onLogin={() => setKioskStep('dashboard')} />;
       }
-      return <KioskPanel gameLabels={gameLabels} />;
+      if (kioskStep === 'dashboard') {
+        return (
+          <KioskGameSelectScreen
+            gameLabels={gameLabels}
+            selectedGame={activeGame}
+            onSelectGame={setActiveGame}
+            onContinue={() => setKioskStep('betting')}
+          />
+        );
+      }
+      return <KioskPanel gameLabels={gameLabels} initialGameType={activeGame} />;
     }
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;
-  }, [role, kioskStep]);
+  }, [role, kioskStep, activeGame]);
 
   const quickLogin = async () => {
     const creds = credentialsByRole[role];
