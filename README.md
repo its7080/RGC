@@ -22,6 +22,8 @@ Apply the SQL schema and seed data from `backend/sql/schema.sql` to your Postgre
 **Option A: using Docker (recommended for this repo)**
 ```bash
 docker compose exec -T postgres psql -U rgc -d rgc < backend/sql/schema.sql
+
+Get-Content backend/sql/schema.sql | docker compose exec -T postgres psql -U rgc -d rgc
 ```
 
 **Option B: using local `psql`**
