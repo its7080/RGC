@@ -11,7 +11,7 @@ const gameOptionsFactory = {
   luckySpin: () => Array.from({ length: 12 }, (_, i) => `slot-${i + 1}`)
 };
 
-export function KioskPanel({ gameLabels = {}, initialGameType = 'horseRace' }) {
+export function KioskPanel({ gameLabels = {}, initialGameType = 'horseRace', onChangeGame, onBackToGames }) {
   const [gameType, setGameType] = useState(initialGameType);
   const [option, setOption] = useState('horse-1');
   const [wager, setWager] = useState(50);
@@ -50,6 +50,7 @@ export function KioskPanel({ gameLabels = {}, initialGameType = 'horseRace' }) {
             onChange={(e) => {
               const nextGame = e.target.value;
               setGameType(nextGame);
+              if (onChangeGame) onChangeGame(nextGame);
               const firstOption = gameOptionsFactory[nextGame]?.()[0] || '';
               setOption(firstOption);
             }}
@@ -72,7 +73,14 @@ export function KioskPanel({ gameLabels = {}, initialGameType = 'horseRace' }) {
           <input type="number" value={wager} onChange={(e) => setWager(e.target.value)} />
         </label>
       </div>
-      <button onClick={submitBet}>Place Bet</button>
+      <div className="row">
+        <button onClick={submitBet}>Place Bet</button>
+        {onBackToGames && (
+          <button type="button" onClick={onBackToGames}>
+            Back to Game Selection
+          </button>
+        )}
+      </div>
       {error && <p className="error">{error}</p>}
       {result && <pre>{JSON.stringify({ betId: result.bet.betId, qrToken: result.qrToken }, null, 2)}</pre>}
     </div>

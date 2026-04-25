@@ -119,7 +119,12 @@ export function App() {
         return <KioskLandingScreen onPlayNow={() => setKioskStep('terms')} />;
       }
       if (kioskStep === 'terms') {
-        return <KioskTermsScreen onAgree={() => setKioskStep('login')} />;
+        return (
+          <KioskTermsScreen
+            onAgree={() => setKioskStep('login')}
+            onBack={() => setKioskStep('intro')}
+          />
+        );
       }
       if (kioskStep === 'login') {
         return (
@@ -127,6 +132,7 @@ export function App() {
             onLogin={handleKioskLogin}
             error={kioskLoginError}
             isSubmitting={kioskLoginPending}
+            onBack={() => setKioskStep('terms')}
           />
         );
       }
@@ -137,10 +143,18 @@ export function App() {
             selectedGame={activeGame}
             onSelectGame={setActiveGame}
             onContinue={() => setKioskStep('betting')}
+            onBack={() => setKioskStep('login')}
           />
         );
       }
-      return <KioskPanel gameLabels={gameLabels} initialGameType={activeGame} />;
+      return (
+        <KioskPanel
+          gameLabels={gameLabels}
+          initialGameType={activeGame}
+          onChangeGame={setActiveGame}
+          onBackToGames={() => setKioskStep('dashboard')}
+        />
+      );
     }
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;

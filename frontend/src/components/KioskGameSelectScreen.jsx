@@ -10,7 +10,7 @@ const gameMeta = {
   luckySpin: { icon: '🎡', tag: 'Spin & Win' }
 };
 
-export function KioskGameSelectScreen({ gameLabels = {}, selectedGame, onSelectGame, onContinue }) {
+export function KioskGameSelectScreen({ gameLabels = {}, selectedGame, onSelectGame, onContinue, onBack }) {
   const gameEntries = Object.entries(gameLabels);
 
   return (
@@ -51,7 +51,14 @@ export function KioskGameSelectScreen({ gameLabels = {}, selectedGame, onSelectG
           })}
         </div>
 
-        <button className="play-now-kiosk" type="button" onClick={onContinue}>PLAY {gameLabels[selectedGame] || 'GAME'}</button>
+        <div className="row" style={{ justifyContent: 'center', gap: 12 }}>
+          {onBack && (
+            <button className="play-now-kiosk" type="button" onClick={onBack}>
+              BACK
+            </button>
+          )}
+          <button className="play-now-kiosk" type="button" onClick={onContinue}>PLAY {gameLabels[selectedGame] || 'GAME'}</button>
+        </div>
       </div>
     </section>
   );
