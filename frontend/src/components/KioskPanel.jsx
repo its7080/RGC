@@ -11,14 +11,20 @@ const gameOptionsFactory = {
   luckySpin: () => Array.from({ length: 12 }, (_, i) => `slot-${i + 1}`)
 };
 
-export function KioskPanel({ gameLabels = {} }) {
-  const [gameType, setGameType] = useState('horseRace');
+export function KioskPanel({ gameLabels = {}, initialGameType = 'horseRace' }) {
+  const [gameType, setGameType] = useState(initialGameType);
   const [option, setOption] = useState('horse-1');
   const [wager, setWager] = useState(50);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
 
   const options = useMemo(() => (gameOptionsFactory[gameType] ? gameOptionsFactory[gameType]() : []), [gameType]);
+
+  React.useEffect(() => {
+    setGameType(initialGameType);
+    const firstOption = gameOptionsFactory[initialGameType]?.()[0] || '';
+    setOption(firstOption);
+  }, [initialGameType]);
 
   const submitBet = async () => {
     try {

@@ -3,6 +3,10 @@ import { login } from './api';
 import { socket } from './socket';
 import { GameCanvas } from './components/GameCanvas';
 import { KioskPanel } from './components/KioskPanel';
+import { KioskLandingScreen } from './components/KioskLandingScreen';
+import { KioskTermsScreen } from './components/KioskTermsScreen';
+import { KioskLoginScreen } from './components/KioskLoginScreen';
+import { KioskGameSelectScreen } from './components/KioskGameSelectScreen';
 import { AdminPanel } from './components/AdminPanel';
 import { SuperAdminPanel } from './components/SuperAdminPanel';
 
@@ -35,6 +39,9 @@ export function App() {
   const [gameStates, setGameStates] = useState({ horseRace: defaultGameState });
   const [events, setEvents] = useState([]);
   const [authMsg, setAuthMsg] = useState('Not authenticated');
+  const [kioskStep, setKioskStep] = useState('intro');
+  const [kioskLoginError, setKioskLoginError] = useState('');
+  const [kioskLoginPending, setKioskLoginPending] = useState(false);
 
   useEffect(() => {
     const patchState = (gameType, patch) => {
@@ -81,11 +88,62 @@ export function App() {
     setEvents((prev) => [{ event, payload, at: new Date().toISOString() }, ...prev].slice(0, 30));
   };
 
+
+  useEffect(() => {
+    if (role === 'kiosk') {
+      setKioskStep('intro');
+      setKioskLoginError('');
+      setKioskLoginPending(false);
+    }
+  }, [role]);
   const activePanel = useMemo(() => {
-    if (role === 'kiosk') return <KioskPanel gameLabels={gameLabels} />;
+    if (role === 'kiosk') {
+      if (kioskStep === 'intro') {
+        return <KioskLandingScreen onPlayNow={() => setKioskStep('terms')} />;
+      }
+      if (kioskStep === 'terms') {
+        return <KioskTermsScreen onAgree={() => setKioskStep('login')} />;
+      }
+      if (kioskStep === 'login') {
+        return (
+          <KioskLoginScreen
+            onLogin={handleKioskLogin}
+            error={kioskLoginError}
+            isSubmitting={kioskLoginPending}
+          />
+        );
+      }
+      if (kioskStep === 'dashboard') {
+        return (
+          <KioskGameSelectScreen
+            gameLabels={gameLabels}
+            selectedGame={activeGame}
+            onSelectGame={setActiveGame}
+            onContinue={() => setKioskStep('betting')}
+          />
+        );
+      }
+      return <KioskPanel gameLabels={gameLabels} initialGameType={activeGame} />;
+    }
     if (role === 'admin') return <AdminPanel />;
     return <SuperAdminPanel />;
-  }, [role]);
+  }, [role, kioskStep, activeGame, kioskLoginError, kioskLoginPending]);
+
+  const handleKioskLogin = async ({ username, password }) => {
+    try {
+      setKioskLoginPending(true);
+      setKioskLoginError('');
+      const data = await login(username, password);
+      localStorage.setItem('rgc_token', data.token);
+      if (data.refreshToken) localStorage.setItem('rgc_refresh_token', data.refreshToken);
+      setAuthMsg(`Logged in as ${data.role || 'kiosk'}`);
+      setKioskStep('dashboard');
+    } catch (e) {
+      setKioskLoginError(e.message || 'Login failed');
+    } finally {
+      setKioskLoginPending(false);
+    }
+  };
 
   const quickLogin = async () => {
     const creds = credentialsByRole[role];
@@ -102,7 +160,7 @@ export function App() {
 
   return (
     <main className="layout">
-      <header className="panel">
+      <header className="panel" style={{ display: role === 'kiosk' && kioskStep !== 'betting' ? 'none' : 'block' }}>
         <h1>Royal Gold Casino — Entertainment Platform</h1>
         <p>All enabled games auto-execute every 300 seconds (5 min). Bets are accepted before next round starts.</p>
         <div className="row">
@@ -126,22 +184,26 @@ export function App() {
         </div>
       </header>
 
-      <section className="grid-two">
-        <GameCanvas
-          gameType={activeGame}
-          gameLabel={gameLabels[activeGame]}
-          phase={currentGameState.phase}
-          countdown={currentGameState.countdown}
-          leaderboard={currentGameState.leaderboard}
-          result={currentGameState.result}
-        />
+      <section className={role === 'kiosk' && kioskStep !== 'betting' ? 'grid-one' : 'grid-two'}>
+        {!(role === 'kiosk' && kioskStep !== 'betting') && (
+          <GameCanvas
+            gameType={activeGame}
+            gameLabel={gameLabels[activeGame]}
+            phase={currentGameState.phase}
+            countdown={currentGameState.countdown}
+            leaderboard={currentGameState.leaderboard}
+            result={currentGameState.result}
+          />
+        )}
         {activePanel}
       </section>
 
-      <section className="panel">
-        <h3>Live Event Feed</h3>
-        <pre>{JSON.stringify(events, null, 2)}</pre>
-      </section>
+      {!(role === 'kiosk' && kioskStep !== 'betting') && (
+        <section className="panel">
+          <h3>Live Event Feed</h3>
+          <pre>{JSON.stringify(events, null, 2)}</pre>
+        </section>
+      )}
     </main>
   );
 }
